@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="manifest" href='data:application/manifest+json,{"name":"ioBroker","display":"standalone"}'>
+        <meta name="mobile-web-app-capable" content="yes">
+        <title>ioBroker Dynamic Dashboard</title>
+        <script id="socket-io-script"></script>
+        <link rel="stylesheet" href="style.css">
+    </head>
+
+    <body>
+
+        <div id="obj-browser">
+            <div class="obj-browser-header">
+                <h3>ioBroker Datenpunkte</h3>
+                <button class="obj-browser-close-btn" onclick="document.getElementById('obj-browser').style.display='none'">Schließen</button>
+            </div>
+            <div id="obj-tree">Lade Objekte...</div>
+        </div>
+
+        <div id="app"></div>
+
+        <!-- Lightbox für ioBroker-Konfiguration -->
+        <div id="config-lightbox">
+            <div id="config-lightbox-content">
+                <h2>ioBroker Verbindung</h2>
+                <div class="subtitle">Instanz des WEB-Server-Adapters</div>
+                <label for="iobroker-ip">IP-Adresse</label>
+                <input type="text" id="iobroker-ip" placeholder="z.B. 192.168.1.100" />
+
+                <label for="iobroker-port">Port</label>
+                <input type="text" id="iobroker-port" placeholder="z.B. 8082" />
+
+                <label for="iobroker-language">Sprache</label>
+                <select id="iobroker-language" onchange="setLanguage(this.value, true)">
+                    <option value="en">English</option>
+                    <option value="de">Deutsch</option>
+                </select>
+
+                <div id="config-status-message"></div>
+
+                <div id="config-lightbox-buttons">
+                    <button class="btn" id="config-test-btn" onclick="testIoBrokerConnection()">Prüfen</button>
+                    <button class="btn config-save-btn-active" id="config-save-btn" onclick="saveIoBrokerConfig()" disabled>Speichern</button>
+                    <button class="btn" id="config-retry-btn" onclick="retryIoBrokerConnection()" style="display:none;">Erneut verbinden</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lightbox für Wertregler -->
+        <div id="lightbox-overlay" class="lightbox-overlay">
+            <div class="lightbox-content" onclick="event.stopPropagation()">
+                <div class="lightbox-title" id="lightbox-title">Wertregler</div>
+                <div class="slider-container">
+                    <span class="slider-value" id="slider-min">0</span>
+                    <input type="range" id="slider-input" min="0" max="100" step="1" value="50">
+                    <span class="slider-value" id="slider-max">100</span>
+                </div>
+                <div class="slider-current-value" id="slider-current-value">50</div>
+                <div class="mapping-buttons" id="mapping-buttons"></div>
+            </div>
+        </div>
+
+        <div class="sticky-footer">
+            <div class="footer-tabs" id="footer-tabs"></div>
+            <a href="?config" class="config-btn" id="config-icon" title="Einstellungen">⚙️</a>
+        </div>
+
+        <script src="translations.js"></script>
+        <script src="config.js"></script>
+        <script src="editor.js"></script>
+        <script src="script.js"></script>
+
+    </body>
+
+</html>

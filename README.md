@@ -1,6 +1,6 @@
 # LaroVis
 
-LaroVis: A lightweight and clean web dashboard for ioBroker. 
+LaroVis: Ein leichtes und sauberes Web-Dashboard für ioBroker.
 
 LaroVis bietet eine schnelle, ressourcenschonende und übersichtliche Visualisierung für Dein Smart Home. Es ist so aufgebaut, dass es leicht verständlich und ohne großen Aufwand an die eigenen Bedürfnisse anpassbar ist.
 
@@ -22,3 +22,7 @@ LaroVis bietet eine schnelle, ressourcenschonende und übersichtliche Visualisie
 ## Lizenz
 
 Dieses Projekt ist unter der GNU GPLv3 Lizenz veröffentlicht.
+
+## Mitarbeit
+
+Aktuell bitte keine Pullrequests - ist vorerst ein rein privates Projekt!

@@ -251,19 +251,22 @@ function createTile(tile, dashboardConfig) {
 
     if (tile.subValues && tile.subValues.length > 0) {
         innerHTML += `<div class="subwerte-container">`;
-        tile.subValues.forEach(sub => {
+        tile.subValues.forEach((sub, idx) => {
             innerHTML += `<div class="subwert">
             <span>${sub.emoji}</span>
-            <span id="subval-${sub.id}">--</span>
+            <span class="subval-text" data-subidx="${idx}">--</span>
             </div>`;
 
             if (sub.type === 'status' && sub.mapping) {
                 subscribeState(sub.id, (val) => {
-                    const el = document.getElementById(`subval-${sub.id}`);
+                    const el = div.querySelector(`.subval-text[data-subidx="${idx}"]`);
                     if (el) el.textContent = sub.mapping[String(val)] || val;
                 });
             } else {
-                subscribeState(sub.id, (val) => updateValue(`subval-${sub.id}`, val, sub.decimals, sub.unit));
+                subscribeState(sub.id, (val) => {
+                    const el = div.querySelector(`.subval-text[data-subidx="${idx}"]`);
+                    if (el) el.textContent = formatNumber(val, sub.decimals) + (sub.unit || '');
+                });
             }
         });
         innerHTML += `</div>`;

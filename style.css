@@ -778,6 +778,11 @@ color: var(--error-color);
     background: var(--delete-btn-bg);
 }
 
+.config-tile-btn-copy {
+    padding: 0.2rem 0.4rem;
+    background: var(--delete-btn-bg);
+}
+
 .config-sight-actions {
     display: flex;
     gap: 0.5rem;
@@ -814,6 +819,22 @@ color: var(--error-color);
 }
 
 .config-input-with-btn {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.config-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--obj-browser-border);
+    padding-bottom: 1rem;
+}
+.config-section-header h2 {
+    margin: 0;
+}
+.config-section-header .config-header-buttons {
     display: flex;
     gap: 0.5rem;
 }

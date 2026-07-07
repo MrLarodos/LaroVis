@@ -238,6 +238,7 @@ function renderConfigUI() {
                         <div class="config-tile-row config-tile-row--section">
                         <span draggable="false" class="config-tile-label">📑 ${tile.title || t('noTitle')} <em>(${t('section')})</em></span>
                         <div class="config-tile-actions">
+                        <button draggable="false" class="btn config-tile-btn-copy" onclick="copyTile(${dIdx}, ${sIdx}, ${tIdx})">📋</button>
                         <button draggable="false" class="btn config-tile-btn-edit" onclick="editSection(${dIdx}, ${sIdx}, ${tIdx})">✏️</button>
                         <button draggable="false" class="btn config-tile-btn-delete" onclick="deleteTile(${dIdx}, ${sIdx}, ${tIdx})">🗑️</button>
                         </div>
@@ -249,6 +250,7 @@ function renderConfigUI() {
                         <div class="config-tile-row config-tile-row--tile">
                         <span draggable="false" class="config-tile-label">${tile.title || t('noTitle')} <em>(${tileTypeLabel(tile.type)})</em></span>
                         <div class="config-tile-actions">
+                        <button draggable="false" class="btn config-tile-btn-copy" onclick="copyTile(${dIdx}, ${sIdx}, ${tIdx})">📋</button>
                         <button draggable="false" class="btn config-tile-btn-edit" onclick="editTile(${dIdx}, ${sIdx}, ${tIdx})">✏️</button>
                         <button draggable="false" class="btn config-tile-btn-delete" onclick="deleteTile(${dIdx}, ${sIdx}, ${tIdx})">🗑️</button>
                         </div>
@@ -320,7 +322,13 @@ function renderConfigUI() {
 
         app.innerHTML = `
         <div class="config-panel">
+        <div class="config-section-header">
         <h2>${t('editTileTitle')}</h2>
+        <div class="config-header-buttons">
+        <button class="btn" style="background:var(--close-btn-bg);" onclick="configState.view='overview'; renderConfigUI();">${t('cancelButton')}</button>
+        <button class="btn" onclick="saveTile()">${t('saveButtonGeneric')}</button>
+        </div>
+        </div>
 
         <div class="config-form-field">
         <label>${t('titleLabel')}</label>
@@ -511,6 +519,31 @@ window.deleteTile = function(dIdx, sIdx, tIdx) {
         appConfig.dashboards[dIdx].sights[sIdx].tiles.splice(tIdx, 1);
         saveConfigAndRender();
     }
+};
+
+window.copyTile = function(dIdx, sIdx, tIdx) {
+    const tiles = appConfig.dashboards[dIdx].sights[sIdx].tiles;
+    const copy = JSON.parse(JSON.stringify(tiles[tIdx]));
+
+    // Smarte Namensgebung: Basis-Titel ohne bestehende "(N)"-Suffix ermitteln
+    const currentTitle = copy.title || '';
+    const suffixMatch = currentTitle.match(/^(.*?)\s*\(\d+\)$/);
+    const baseTitle = suffixMatch ? suffixMatch[1] : currentTitle;
+
+    // Höchste vorhandene Nummer für diesen Basis-Titel im Array suchen
+    let maxNum = 0;
+    const numRegex = new RegExp('^' + baseTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\((\\d+)\\)$');
+    tiles.forEach(tile => {
+        const m = (tile.title || '').match(numRegex);
+        if (m) {
+            const n = parseInt(m[1]);
+            if (n > maxNum) maxNum = n;
+        }
+    });
+
+    copy.title = baseTitle + ' (' + (maxNum + 1) + ')';
+    tiles.splice(tIdx + 1, 0, copy);
+    saveConfigAndRender();
 };
 
 window.saveTile = function() {

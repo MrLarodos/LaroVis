@@ -123,25 +123,59 @@ function setupDraggable(selector, onDrop) {
 function initDragDrop() {
     // Kacheln sortieren
     setupDraggable('[id^="tile-drag-"]', function(srcEl, dstEl) {
+        // Sicherstellen, dass wirklich eine Kachel auf eine Kachel gezogen wurde
+        if (!srcEl.id.startsWith('tile-drag-')) return;
+
         const srcDIdx = parseInt(srcEl.dataset.didx), srcSIdx = parseInt(srcEl.dataset.sidx), srcTIdx = parseInt(srcEl.dataset.tidx);
         const dstDIdx = parseInt(dstEl.dataset.didx), dstSIdx = parseInt(dstEl.dataset.sidx), dstTIdx = parseInt(dstEl.dataset.tidx);
-        if (srcDIdx !== dstDIdx || srcSIdx !== dstSIdx) return;
-        if (srcTIdx === dstTIdx) return;
-        const tiles = appConfig.dashboards[srcDIdx].sights[srcSIdx].tiles;
-        const [moved] = tiles.splice(srcTIdx, 1);
-        tiles.splice(dstTIdx, 0, moved);
+        
+        // Abbruch, wenn es die exakt selbe Position ist
+        if (srcDIdx === dstDIdx && srcSIdx === dstSIdx && srcTIdx === dstTIdx) return;
+
+        const srcTiles = appConfig.dashboards[srcDIdx].sights[srcSIdx].tiles;
+        const dstTiles = appConfig.dashboards[dstDIdx].sights[dstSIdx].tiles;
+
+        // Kachel entfernen und am neuen Ziel einfügen
+        const [moved] = srcTiles.splice(srcTIdx, 1);
+        dstTiles.splice(dstTIdx, 0, moved);
+
         socket.emit('setState', configId, { val: JSON.stringify(appConfig), ack: false }, () => { renderConfigUI(); });
     });
 
-    // Sichten sortieren
+    // Sichten sortieren (und Kacheln in Sichten ablegen)
     setupDraggable('[id^="sight-drag-"]', function(srcEl, dstEl) {
+        // Fall 1: Eine Kachel wurde auf die Sichtfläche gezogen
+        if (srcEl.id.startsWith('tile-drag-')) {
+            const srcDIdx = parseInt(srcEl.dataset.didx), srcSIdx = parseInt(srcEl.dataset.sidx), srcTIdx = parseInt(srcEl.dataset.tidx);
+            const dstDIdx = parseInt(dstEl.dataset.didx), dstSIdx = parseInt(dstEl.dataset.sidx);
+
+            // Abbruch, wenn Kachel auf ihre aktuelle Ursprungs-Sicht gezogen wird
+            if (srcDIdx === dstDIdx && srcSIdx === dstSIdx) return;
+
+            const srcTiles = appConfig.dashboards[srcDIdx].sights[srcSIdx].tiles;
+            const dstTiles = appConfig.dashboards[dstDIdx].sights[dstSIdx].tiles;
+
+            // Kachel entfernen und ganz am Ende der neuen Sicht anfügen
+            const [moved] = srcTiles.splice(srcTIdx, 1);
+            dstTiles.push(moved);
+
+            socket.emit('setState', configId, { val: JSON.stringify(appConfig), ack: false }, () => { renderConfigUI(); });
+            return;
+        }
+
+        // Fall 2: Normale Sicht-Sortierung (Sicht auf Sicht)
+        if (!srcEl.id.startsWith('sight-drag-')) return;
+
         const srcDIdx = parseInt(srcEl.dataset.didx), srcSIdx = parseInt(srcEl.dataset.sidx);
         const dstDIdx = parseInt(dstEl.dataset.didx), dstSIdx = parseInt(dstEl.dataset.sidx);
+        
         if (srcDIdx !== dstDIdx) return;
         if (srcSIdx === dstSIdx) return;
+        
         const sights = appConfig.dashboards[srcDIdx].sights;
         const [moved] = sights.splice(srcSIdx, 1);
         sights.splice(dstSIdx, 0, moved);
+        
         socket.emit('setState', configId, { val: JSON.stringify(appConfig), ack: false }, () => { renderConfigUI(); });
     });
 }

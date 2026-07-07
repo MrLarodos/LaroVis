@@ -316,7 +316,7 @@ function renderConfigUI() {
         <div id="type-specific-fields"></div>
 
         <h3 style="margin-top: 2rem; border-top: 1px solid var(--obj-browser-border); padding-top: 1rem;">${t('subvaluesTitle')}</h3>
-        <div class="config-form-field">
+        <div class="config-form-field" id="fliptime-field" style="display:${(tile.subValues || []).length >= 2 ? 'block' : 'none'};">
         <label>${t('flipTimeLabel')}</label>
         <input type="number" id="kachel-flipTime" value="${tile.flipTime !== undefined ? tile.flipTime : 3000}" min="500" max="30000" step="500" class="config-form-field-full">
         </div>
@@ -939,6 +939,12 @@ window.renderSubValues = function() {
     // Button aktivieren/deaktivieren
     if (addBtn) {
         addBtn.style.display = (tile.subValues || []).length >= 5 ? 'none' : 'inline-block';
+    }
+
+    // Flipzeit-Feld ein-/ausblenden je nach Anzahl der Subwerte
+    const flipTimeField = document.getElementById('fliptime-field');
+    if (flipTimeField) {
+        flipTimeField.style.display = (tile.subValues || []).length >= 2 ? 'block' : 'none';
     }
 };
 

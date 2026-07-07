@@ -316,6 +316,10 @@ function renderConfigUI() {
         <div id="type-specific-fields"></div>
 
         <h3 style="margin-top: 2rem; border-top: 1px solid var(--obj-browser-border); padding-top: 1rem;">${t('subvaluesTitle')}</h3>
+        <div class="config-form-field">
+        <label>${t('flipTimeLabel')}</label>
+        <input type="number" id="kachel-flipTime" value="${tile.flipTime !== undefined ? tile.flipTime : 3000}" min="500" max="30000" step="500" class="config-form-field-full">
+        </div>
         <div id="subvalues-container"></div>
         <button class="btn" id="add-subvalue-btn" onclick="addSubValue()" style="background:var(--success-color); margin-top: 0.5rem;">+ ${t('addSubvalueBtn')}</button>
 
@@ -564,6 +568,12 @@ window.saveTile = function() {
         if (activeOpacityEl) tile.activeOpacity = parseInt(activeOpacityEl.value);
     } else if (tile.type === 'status' || tile.type === 'statusregler') {
         // Mapping wird bereits in updateMapping() gespeichert
+    }
+
+    // Flip-Zeit speichern
+    const flipTimeEl = document.getElementById('kachel-flipTime');
+    if (flipTimeEl) {
+        tile.flipTime = parseInt(flipTimeEl.value) || 3000;
     }
 
     // Subwerte speichern - WICHTIG: Vor dem Neuaufbau die bestehenden Subwerte sichern
@@ -928,7 +938,7 @@ window.renderSubValues = function() {
 
     // Button aktivieren/deaktivieren
     if (addBtn) {
-        addBtn.style.display = (tile.subValues || []).length >= 2 ? 'none' : 'inline-block';
+        addBtn.style.display = (tile.subValues || []).length >= 5 ? 'none' : 'inline-block';
     }
 };
 
@@ -1076,7 +1086,7 @@ window.addSubValue = function() {
     const tile = appConfig.dashboards[configState.dIdx].sights[configState.sIdx].tiles[configState.tIdx];
     if (!tile.subValues) tile.subValues = [];
 
-    if (tile.subValues.length < 2) {
+    if (tile.subValues.length < 5) {
         tile.subValues.push({
             id: '',
             type: 'zahlwert',

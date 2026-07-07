@@ -251,7 +251,7 @@ function createTile(tile, dashboardConfig) {
 
     if (tile.subValues && tile.subValues.length > 0) {
         innerHTML += `<div class="subwerte-container">`;
-        tile.subValues.slice(0,2).forEach(sub => {
+        tile.subValues.forEach(sub => {
             innerHTML += `<div class="subwert">
             <span>${sub.emoji}</span>
             <span id="subval-${sub.id}">--</span>
@@ -270,6 +270,49 @@ function createTile(tile, dashboardConfig) {
     }
 
     div.innerHTML = innerHTML;
+
+    // ResizeObserver für Flip-Modus bei Subwert-Overflow
+    if (tile.subValues && tile.subValues.length > 0) {
+        const subwerteContainer = div.querySelector('.subwerte-container');
+        if (subwerteContainer) {
+            const observer = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    if (entry.target.scrollWidth > entry.target.clientWidth) {
+                        entry.target.classList.add('flip-mode');
+                        observer.disconnect();
+
+                        // Flip-Logik starten
+                        const subwerte = entry.target.querySelectorAll('.subwert');
+                        if (subwerte.length === 0) return;
+
+                        let currentIdx = 0;
+                        subwerte[currentIdx].classList.add('flip-active');
+
+                        setInterval(() => {
+                            const items = entry.target.querySelectorAll('.subwert');
+                            if (items.length < 2) return;
+
+                            const current = items[currentIdx];
+                            const nextIdx = (currentIdx + 1) % items.length;
+                            const next = items[nextIdx];
+
+                            current.classList.remove('flip-active');
+                            current.classList.add('flip-exit');
+                            next.classList.add('flip-active');
+                            next.classList.remove('flip-exit');
+
+                            setTimeout(() => {
+                                current.classList.remove('flip-exit');
+                            }, 400);
+
+                            currentIdx = nextIdx;
+                        }, tile.flipTime || 3000);
+                    }
+                }
+            });
+            observer.observe(subwerteContainer);
+        }
+    }
 
     // Schriftgröße anwenden: Kachel-spezifisch oder Dashboard-Default
     const fontSize = tile.fontSize !== undefined ? tile.fontSize : (dashboardConfig?.tileFontSize || 2.8);

@@ -130,6 +130,7 @@ const translations = {
                 subvalueDecimals: 'Decimal Places',
                 subvalueUnit: 'Unit',
                 subvalueStatusMapping: 'Status Mapping',
+                flipTimeLabel: 'Flip Time (ms)',
 
                 // Mapping
                 mappingValue: 'Value',
@@ -280,6 +281,7 @@ const translations = {
                 subvalueDecimals: 'Dezimalstellen',
                 subvalueUnit: 'Einheit',
                 subvalueStatusMapping: 'Status-Mapping',
+                flipTimeLabel: 'Flipzeit (ms)',
 
                 // Mapping
                 mappingValue: 'Wert',

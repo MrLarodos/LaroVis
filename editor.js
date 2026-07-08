@@ -341,6 +341,7 @@ function renderConfigUI() {
         <input type="text" id="kachel-id" value="${tile.id}" class="config-form-field-full">
         <button class="btn" onclick="openObjectBrowser('kachel-id')" style="white-space: nowrap;">🔍 ${t('treeButton')}</button>
         </div>
+        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; margin-top:0.5rem;"><input type="checkbox" id="kachel-waitForAck" ${tile.waitForAck !== false ? 'checked' : ''} style="width:auto; margin:0;"> <span>${t('waitForAckLabel')}</span></label>
         </div>
 
         <div class="config-form-field">
@@ -637,6 +638,10 @@ window.saveTile = function() {
         // Mapping wird bereits in updateMapping() gespeichert
     }
 
+    // waitForAck speichern
+    const waitForAckEl = document.getElementById('kachel-waitForAck');
+    if (waitForAckEl) tile.waitForAck = waitForAckEl.checked;
+
     // Flip-Zeit speichern
     const flipTimeEl = document.getElementById('kachel-flipTime');
     if (flipTimeEl) {
@@ -673,6 +678,10 @@ window.saveTile = function() {
                 // Mapping aus dem bestehenden Subwert übernehmen (wurde in updateSubValueMapping() aktualisiert)
                 subValue.mapping = existingSubValues[idx]?.mapping || {};
             }
+
+            // waitForAck für Subwert speichern
+            const svWaitForAckEl = item.querySelector(`#subval-waitForAck-${idx}`);
+            subValue.waitForAck = svWaitForAckEl ? svWaitForAckEl.checked : true;
 
             tile.subValues.push(subValue);
         }
@@ -969,6 +978,7 @@ window.renderSubValues = function() {
         <input type="text" id="subval-id-${idx}" value="${sub.id || ''}" style="flex:1; padding:0.5rem;">
         <button class="btn" onclick="openObjectBrowser('subval-id-${idx}')" style="white-space:nowrap;">🔍</button>
         </div>
+        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; margin-top:0.5rem;"><input type="checkbox" id="subval-waitForAck-${idx}" ${sub.waitForAck !== false ? 'checked' : ''} style="width:auto; margin:0;"> <span style="font-size:0.85rem;">${t('waitForAckLabel')}</span></label>
         </div>
 
         <div class="config-form-field">

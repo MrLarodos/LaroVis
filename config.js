@@ -285,6 +285,8 @@ function connectSocket(socketUrl) {
     socket = io(socketUrl);
 
     socket.on('connect', () => {
+        hideConfigLightbox();
+        
         syncLanguageFromIoBroker(socket);
 
         socket.emit('getState', configId, (err, state) => {

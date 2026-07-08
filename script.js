@@ -1,6 +1,52 @@
 // Standard-Sprache: Englisch
 let currentLanguage = 'en';
 
+// ─── AUDIO SYNTHESIZER SETUP START ──────────────────────────────────
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+function playClickSound() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(493.88, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.08);
+    
+    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+    
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.08);
+}
+
+function playReadySound() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(830.61, audioCtx.currentTime + 0.08);
+    
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+    
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.3);
+}
+// ─── AUDIO SYNTHESIZER SETUP END ──────────────────────────────────
+
 // Übersetzungsfunktion
 function t(key) {
     return translations[currentLanguage][key] || key;
@@ -85,6 +131,41 @@ const sightName = urlParams.get('subsight');
 
 let appConfig = {};
 const stateMap = new Map();
+
+// Tracking für ausstehende Hardware-Bestätigungen
+// Struktur: { [tileId]: { targetValue, startTime, fallbackTimer, container } }
+const pendingTileStates = {};
+
+/**
+ * Sendet einen neuen Wert an ioBroker und startet die Ladeanimation.
+ * Die Animation endet erst, wenn ioBroker den exakten Zielwert zurückmeldet.
+ * @param {object} tile       - Das Kachel-Konfigurationsobjekt
+ * @param {*}      value      - Der zu sendende Zielwert
+ * @param {HTMLElement} containerEl - Das .kachel-container Element
+ */
+function sendStateAndUpdateUI(tile, value, containerEl) {
+    // Alten Fallback-Timer löschen, falls noch aktiv
+    if (pendingTileStates[tile.id]?.fallbackTimer) {
+        clearTimeout(pendingTileStates[tile.id].fallbackTimer);
+    }
+
+    playClickSound();
+    containerEl.classList.add('is-loading');
+
+    const fallbackTimer = setTimeout(() => {
+        containerEl.classList.remove('is-loading');
+        delete pendingTileStates[tile.id];
+    }, 20000);
+
+    pendingTileStates[tile.id] = {
+        targetValue: value,
+        startTime: Date.now(),
+        fallbackTimer,
+        container: containerEl
+    };
+
+    socket.emit('setState', tile.id, { val: value, ack: false });
+}
 
 // Speichere die Rücksprung-URL für die Konfiguration
 let returnUrl = 'index.html';
@@ -221,21 +302,28 @@ function createTile(tile, dashboardConfig) {
         return sectionDiv;
     }
 
+    const container = document.createElement('div');
+    container.className = 'kachel-container';
+
+    const loadingBar = document.createElement('div');
+    loadingBar.className = 'kachel-loading-bar';
+    container.appendChild(loadingBar);
+
     const div = document.createElement('div');
     div.className = `kachel type-${tile.type}`;
     div.id = `tile-${(tile.id || '').replace(/\./g, '-')}`;
 
-    div.style.setProperty('--kachel-bg', tile.bgColor || '#1e1e1e');
-    div.style.setProperty('--kachel-border', tile.borderColor || 'rgba(255,255,255,0.05)');
-    div.style.setProperty('--kachel-border-style', tile.borderStyle || 'solid');
+    container.style.setProperty('--kachel-bg', tile.bgColor || '#1e1e1e');
+    container.style.setProperty('--kachel-border', tile.borderColor || 'rgba(255,255,255,0.05)');
+    container.style.setProperty('--kachel-border-style', tile.borderStyle || 'solid');
 
     // Rahmenbreite: Kachel-spezifisch oder Dashboard-Default
     const borderWidth = tile.borderWidth !== undefined ? tile.borderWidth : (dashboardConfig?.tileBorderWidth || 3);
-    div.style.setProperty('--kachel-border-width', borderWidth + 'px');
+    container.style.setProperty('--kachel-border-width', borderWidth + 'px');
 
-    div.style.setProperty('--title-color', tile.titleColor || '#9ca3af');
-    div.style.setProperty('--value-color', tile.valueColor || '#f3f4f6');
-    if (tile.activeColor) div.style.setProperty('--active-color', tile.activeColor);
+    container.style.setProperty('--title-color', tile.titleColor || '#9ca3af');
+    container.style.setProperty('--value-color', tile.valueColor || '#f3f4f6');
+    if (tile.activeColor) container.style.setProperty('--active-color', tile.activeColor);
 
     // Für Schalter: Overlay-Farbe mit Transparenz setzen
     if (tile.type === 'switch' && tile.activeColor) {
@@ -243,7 +331,7 @@ function createTile(tile, dashboardConfig) {
         const opacity = (100 - transparency) / 100; // Transparenz umrechnen in Opacity
         const rgb = hexToRgb(tile.activeColor);
         if (rgb) {
-            div.style.setProperty('--active-overlay-color', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`);
+            container.style.setProperty('--active-overlay-color', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`);
         }
     }
 
@@ -258,12 +346,16 @@ function createTile(tile, dashboardConfig) {
             </div>`;
 
             if (sub.type === 'status' && sub.mapping) {
-                subscribeState(sub.id, (val) => {
+                subscribeState(sub.id, (val, ack) => {
+                    const requireAck = sub.waitForAck !== false;
+                    if (requireAck && ack === false) return;
                     const el = div.querySelector(`.subval-text[data-subidx="${idx}"]`);
                     if (el) el.textContent = sub.mapping[String(val)] || val;
                 });
             } else {
-                subscribeState(sub.id, (val) => {
+                subscribeState(sub.id, (val, ack) => {
+                    const requireAck = sub.waitForAck !== false;
+                    if (requireAck && ack === false) return;
                     const el = div.querySelector(`.subval-text[data-subidx="${idx}"]`);
                     if (el) el.textContent = formatNumber(val, sub.decimals) + (sub.unit || '');
                 });
@@ -322,7 +414,14 @@ function createTile(tile, dashboardConfig) {
     const wertEl = div.querySelector('.wert');
     if (wertEl) wertEl.style.fontSize = fontSize + 'rem';
 
-    subscribeState(tile.id, (val) => {
+    // Flag: initialer getState-Aufruf soll die Ladeanimation NICHT beenden
+    let initialStateDone = false;
+
+    subscribeState(tile.id, (val, ack) => {
+        // Nur bestätigte Werte ins UI übernehmen, wenn waitForAck aktiv (Standard: true)
+        const requireAck = tile.waitForAck !== false;
+        if (requireAck && ack === false) return;
+
         const valEl = div.querySelector('.wert');
 
         if (tile.type === 'zahlwert') {
@@ -378,12 +477,41 @@ function createTile(tile, dashboardConfig) {
         else if ((tile.type === 'status' || tile.type === 'statusregler') && tile.mapping) {
             valEl.textContent = tile.mapping[String(val)] || val;
         }
+
+        // Hardware-Sync: Ladeanimation nur beenden, wenn Zielwert exakt erreicht.
+        // Den initialen getState-Callback ignorieren (kein pending vorhanden → kein Problem,
+        // aber wir markieren, dass der erste Wert verarbeitet wurde).
+        if (!initialStateDone) {
+            initialStateDone = true;
+            // Initialer Wert: Ladeanimation NICHT beenden (kein pending aktiv)
+        } else {
+            const pending = pendingTileStates[tile.id];
+            if (pending) {
+                if ((!requireAck || ack === true) && String(val) === String(pending.targetValue)) {
+                    // Zielwert erreicht: Fallback-Timer löschen
+                    clearTimeout(pending.fallbackTimer);
+                    const elapsed = Date.now() - pending.startTime;
+                    const minDisplay = 800;
+                    const removeLoading = () => {
+                        container.classList.remove('is-loading');
+                        delete pendingTileStates[tile.id];
+                        playReadySound();
+                    };
+                    if (elapsed < minDisplay) {
+                        setTimeout(removeLoading, minDisplay - elapsed);
+                    } else {
+                        removeLoading();
+                    }
+                }
+                // Zwischenwert: Animation läuft weiter, nichts tun
+            }
+        }
     });
 
     if (tile.type === 'switch') {
         div.onclick = () => {
             const currentVal = stateMap.get(tile.id);
-            socket.emit('setState', tile.id, { val: !currentVal, ack: false });
+            sendStateAndUpdateUI(tile, !currentVal, container);
         };
     }
 
@@ -393,7 +521,7 @@ function createTile(tile, dashboardConfig) {
         if (!tile.enableHold) {
             // Ohne Haltefunktion: einfacher Klick öffnet Lightbox
             div.onclick = () => {
-                openSliderLightbox(tile);
+                openSliderLightbox(tile, container);
             };
         } else {
             // Mit Haltefunktion: Kurzer Klick = Toggle, Halten = Lightbox
@@ -448,7 +576,7 @@ function createTile(tile, dashboardConfig) {
                     div.classList.add('hold-triggered');
                     isHolding = false;
                     holdTimer = null;
-                    openSliderLightbox(tile);
+                    openSliderLightbox(tile, container);
                     // Aufräumen nach kurzem Delay (Lightbox öffnet sich)
                     setTimeout(() => {
                         div.classList.remove('hold-triggered');
@@ -472,7 +600,7 @@ function createTile(tile, dashboardConfig) {
                     const max = tile.sliderMax !== undefined ? tile.sliderMax : 100;
                     const mid = (min + max) / 2;
                     const newVal = (currentVal !== undefined && currentVal < mid) ? max : min;
-                    socket.emit('setState', tile.id, { val: newVal, ack: false });
+                    sendStateAndUpdateUI(tile, newVal, container);
                 }
             };
 
@@ -495,14 +623,15 @@ function createTile(tile, dashboardConfig) {
     if (tile.type === 'statusregler') {
         div.classList.add('interaktiv');
         div.onclick = () => {
-            openStatusLightbox(tile);
+            openStatusLightbox(tile, container);
         };
     }
 
-    return div;
+    container.appendChild(div);
+    return container;
 }
 
-function openStatusLightbox(tile) {
+function openStatusLightbox(tile, containerEl) {
     const overlay = document.getElementById('lightbox-overlay');
     const titleEl = document.getElementById('lightbox-title');
     const sliderContainer = overlay.querySelector('.slider-container');
@@ -524,7 +653,11 @@ function openStatusLightbox(tile) {
         button.className = 'mapping-button';
         button.textContent = mapping[key];
         button.onclick = () => {
-            socket.emit('setState', tile.id, { val: key, ack: false });
+            if (containerEl) {
+                sendStateAndUpdateUI(tile, key, containerEl);
+            } else {
+                socket.emit('setState', tile.id, { val: key, ack: false });
+            }
             overlay.style.display = 'none';
         };
         mappingButtonsContainer.appendChild(button);
@@ -543,7 +676,7 @@ function openStatusLightbox(tile) {
     };
 }
 
-function openSliderLightbox(tile) {
+function openSliderLightbox(tile, containerEl) {
     const overlay = document.getElementById('lightbox-overlay');
     const titleEl = document.getElementById('lightbox-title');
     
@@ -587,13 +720,21 @@ function openSliderLightbox(tile) {
     minEl.onclick = () => {
         sliderInput.value = min;
         updateCurrentDisplay(min);
-        socket.emit('setState', tile.id, { val: min, ack: false });
+        if (containerEl) {
+            sendStateAndUpdateUI(tile, min, containerEl);
+        } else {
+            socket.emit('setState', tile.id, { val: min, ack: false });
+        }
     };
 
     maxEl.onclick = () => {
         sliderInput.value = max;
         updateCurrentDisplay(max);
-        socket.emit('setState', tile.id, { val: max, ack: false });
+        if (containerEl) {
+            sendStateAndUpdateUI(tile, max, containerEl);
+        } else {
+            socket.emit('setState', tile.id, { val: max, ack: false });
+        }
     };
 
     // Aktuellen Wert formatiert anzeigen
@@ -615,7 +756,11 @@ function openSliderLightbox(tile) {
             button.onclick = () => {
                 sliderInput.value = numKey;
                 updateCurrentDisplay(numKey);
-                socket.emit('setState', tile.id, { val: numKey, ack: false });
+                if (containerEl) {
+                    sendStateAndUpdateUI(tile, numKey, containerEl);
+                } else {
+                    socket.emit('setState', tile.id, { val: numKey, ack: false });
+                }
             };
             mappingButtonsContainer.appendChild(button);
         }
@@ -628,7 +773,11 @@ function openSliderLightbox(tile) {
 
     const onRelease = (e) => {
         const newValue = parseFloat(e.target.value);
-        socket.emit('setState', tile.id, { val: newValue, ack: false });
+        if (containerEl) {
+            sendStateAndUpdateUI(tile, newValue, containerEl);
+        } else {
+            socket.emit('setState', tile.id, { val: newValue, ack: false });
+        }
     };
 
     sliderInput.addEventListener('input', onInput);
@@ -654,7 +803,7 @@ function subscribeState(id, callback) {
     socket.emit('getState', id, (err, state) => {
         if (state) {
             stateMap.set(id, state.val);
-            callback(state.val);
+            callback(state.val, state.ack);
         }
     });
     socket.emit('subscribe', id);
@@ -662,7 +811,7 @@ function subscribeState(id, callback) {
     socket.on('stateChange', (changedId, state) => {
         if (changedId === id && state) {
             stateMap.set(id, state.val);
-            callback(state.val);
+            callback(state.val, state.ack);
         }
     });
 }

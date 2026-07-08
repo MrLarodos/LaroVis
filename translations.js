@@ -152,7 +152,8 @@ const translations = {
                 // Misc
                 noTitle: 'No Title',
                 section: 'Section',
-                dragToSort: 'Drag to sort'
+                dragToSort: 'Drag to sort',
+                waitForAckLabel: 'Wait for acknowledge'
     },
     de: {
         // Connection Lightbox
@@ -303,6 +304,7 @@ const translations = {
                 // Misc
                 noTitle: 'Ohne Titel',
                 section: 'Abschnitt',
-                dragToSort: 'Ziehen zum Sortieren'
+                dragToSort: 'Ziehen zum Sortieren',
+                waitForAckLabel: 'Auf Bestätigung warten'
     }
 };

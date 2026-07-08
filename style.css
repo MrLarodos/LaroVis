@@ -65,12 +65,14 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 7.0rem;
+    min-height: 9.0rem;
     position: relative;
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     box-shadow: 0 6px 15px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.05);
     backdrop-filter: blur(10px);
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .kachel:hover {
@@ -86,7 +88,7 @@ body {
 }
 
 .kachel.active-switch {
-    border: none !important;
+    border: none !important; /* Rahmen weg, damit die Animation bis zum Rand reicht */
     box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
     overflow: hidden;
 }
@@ -116,18 +118,18 @@ body {
 .kachel.active-switch::after {
     content: '';
     position: absolute;
-    inset: 3px; /* Das ist die Dicke deines Rahmens */
+    inset: var(--kachel-border-width, 3px); /* Schiebt die dunkle Mitte exakt um die Rahmenbreite nach innen */
     background: var(--kachel-bg, var(--kachel-bg-default));
-    border-radius: calc(1rem - 3px);
+    border-radius: calc(1rem - var(--kachel-border-width, 3px));
     z-index: 0;
 }
 
 /* Transparenter Overlay für aktive Schalter - liegt über dem ::after Element */
 .kachel.active-switch .active-overlay {
     position: absolute;
-    inset: 3px;
+    inset: var(--kachel-border-width, 3px); 
     background: var(--active-overlay-color, rgba(16, 185, 129, 0.9));
-    border-radius: calc(1rem - 3px);
+    border-radius: calc(1rem - var(--kachel-border-width, 3px));
     z-index: 1;
     pointer-events: none;
 }
@@ -1050,4 +1052,92 @@ color: var(--error-color);
 .kachel.hold-triggered > .subwerte-container {
     z-index: 1;
     position: relative;
+}
+
+/* ── Ladeanimation (kachel-container & kachel-loading-bar) ───────────────── */
+.kachel-container {
+    position: relative;
+    display: block;
+    height: 100%;
+    /* Kachel liegt über dem Ladebalken */
+    isolation: isolate;
+}
+
+.kachel-container .kachel {
+    position: relative;
+    z-index: 1;
+}
+
+.kachel-loading-bar {
+    position: absolute;
+    top: 0;
+    left: 10%;
+    width: 80%;
+    height: 24px;
+    box-sizing: border-box;
+    border: 3px solid color-mix(in srgb, var(--kachel-border), #000 25%);
+    border-bottom: none;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    background: repeating-linear-gradient(
+        45deg,
+        color-mix(in srgb, var(--kachel-bg), #fff 10%),
+        color-mix(in srgb, var(--kachel-bg), #fff 10%) 10px,
+        color-mix(in srgb, var(--kachel-bg), #fff 25%) 10px,
+        color-mix(in srgb, var(--kachel-bg), #fff 25%) 20px
+    );
+    background-size: 28.28px 100%;
+    z-index: 0;
+    transform: translateY(0);
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
+    overflow: hidden;
+}
+
+.kachel-loading-bar::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    right: 1px;
+    height: 35%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.1) 100%);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+@keyframes columnRotation {
+    100% { background-position: 28.28px 0; }
+}
+
+.kachel-container.is-loading .kachel-loading-bar {
+    transform: translateY(-50%);
+    opacity: 1;
+    animation: columnRotation 1.2s linear infinite;
+}
+
+.kachel-container.is-loading .kachel {
+    pointer-events: none;
+    transform: scale(0.96);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.6);
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.kachel-container.is-loading .kachel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    z-index: 10;
+    animation: shimmer 1.5s infinite ease-in-out;
+    pointer-events: none;
 }

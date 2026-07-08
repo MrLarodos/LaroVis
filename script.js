@@ -155,7 +155,7 @@ function sendStateAndUpdateUI(tile, value, containerEl) {
     const fallbackTimer = setTimeout(() => {
         containerEl.classList.remove('is-loading');
         delete pendingTileStates[tile.id];
-    }, 20000);
+    }, 35000);
 
     pendingTileStates[tile.id] = {
         targetValue: value,

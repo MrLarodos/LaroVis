@@ -8,7 +8,13 @@
         <meta name="mobile-web-app-capable" content="yes">
         <title>ioBroker Dynamic Dashboard</title>
         <script id="socket-io-script"></script>
-        <link rel="stylesheet" href="style.css">
+        <script>
+            const version = Math.floor(Math.random() * 1000000) + 1;
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'style.css?v=' + version;
+            document.head.appendChild(link);
+        </script>
     </head>
 
     <body>

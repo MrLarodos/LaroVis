@@ -2,11 +2,18 @@
 let currentLanguage = 'en';
 
 // ─── AUDIO SYNTHESIZER SETUP START ──────────────────────────────────
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioContext();
+let audioCtx = null;
+
+function initAudio() {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
 
 function playClickSound() {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    initAudio();
     
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
@@ -26,7 +33,7 @@ function playClickSound() {
 }
 
 function playReadySound() {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    initAudio();
     
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();

@@ -198,7 +198,7 @@ function initApp() {
     if (isConfig) {
         // In Konfiguration: Zahnrad zu Tür ändern
         if (configIcon) {
-            configIcon.textContent = '🚪';
+            configIcon.innerHTML = '<span>🚪</span>';
             configIcon.href = returnUrl;
             configIcon.title = t('leaveConfig');
         }
@@ -206,7 +206,7 @@ function initApp() {
     } else {
         // Außerhalb Konfiguration: Zahnrad anzeigen
         if (configIcon) {
-            configIcon.textContent = '⚙️';
+            configIcon.innerHTML = '<span>⚙️</span>';
             configIcon.href = '?config';
             configIcon.title = t('settings');
         }
@@ -224,7 +224,7 @@ function renderDashboardSelector() {
     // Zahnrad-Icon in der Dashboard-Auswahl immer anzeigen
     const configIcon = document.getElementById('config-icon');
     if (configIcon) {
-        configIcon.style.display = 'block';
+        configIcon.style.display = 'flex';
     }
 
     let html = `<h1>${t('dashboardsTitle')}</h1><div class="config-dashboard-selector">`;
@@ -266,7 +266,7 @@ function renderDashboard(dName, sName) {
         if (dash.showConfigIcon === false) {
             configIcon.style.display = 'none';
         } else {
-            configIcon.style.display = 'block';
+            configIcon.style.display = 'flex';
         }
     }
 
@@ -279,6 +279,19 @@ function renderDashboard(dName, sName) {
         tab.textContent = s.name;
         tab.href = `?dashboard=${encodeURIComponent(dName)}&subsight=${encodeURIComponent(s.name)}`;
         footerTabs.appendChild(tab);
+    });
+
+    // Aktiven Tab in den sichtbaren Bereich scrollen und Pfeile aktualisieren
+    requestAnimationFrame(() => {
+        const activeTab = footerTabs.querySelector('.footer-tab.active');
+        if (activeTab) {
+            const tabLeft   = activeTab.offsetLeft;
+            const tabWidth  = activeTab.offsetWidth;
+            const containerWidth = footerTabs.clientWidth;
+            footerTabs.scrollLeft = tabLeft - (containerWidth / 2) + (tabWidth / 2);
+        }
+        // Pfeil-Sichtbarkeit nach dem Scrollen neu berechnen
+        footerTabs.dispatchEvent(new Event('scroll'));
     });
 
     const grid = document.createElement('div');
@@ -804,6 +817,51 @@ function openSliderLightbox(tile, containerEl) {
         }
     };
 }
+
+// ─── FOOTER SCROLL ARROWS ────────────────────────────────────────────────────
+(function initFooterScroll() {
+    const tabs      = document.getElementById('footer-tabs');
+    const arrowLeft = document.getElementById('footer-arrow-left');
+    const arrowRight= document.getElementById('footer-arrow-right');
+
+    if (!tabs || !arrowLeft || !arrowRight) return;
+
+    function updateArrows() {
+        const atLeft  = tabs.scrollLeft <= 0;
+        const atRight = tabs.scrollLeft + tabs.clientWidth >= tabs.scrollWidth - 1;
+        const canScroll = tabs.scrollWidth > tabs.clientWidth;
+
+        arrowLeft.classList.toggle('visible',  canScroll && !atLeft);
+        arrowRight.classList.toggle('visible', canScroll && !atRight);
+    }
+
+    // Mausrad → horizontales Scrollen
+    tabs.addEventListener('wheel', function(e) {
+        if (e.deltaY === 0) return;
+        e.preventDefault();
+        tabs.scrollLeft += e.deltaY;
+    }, { passive: false });
+
+    // Scroll-Event → Pfeile aktualisieren
+    tabs.addEventListener('scroll', updateArrows, { passive: true });
+
+    // Pfeil-Klicks
+    arrowLeft.addEventListener('click', function() {
+        tabs.scrollBy({ left: -120, behavior: 'smooth' });
+    });
+    arrowRight.addEventListener('click', function() {
+        tabs.scrollBy({ left: 120, behavior: 'smooth' });
+    });
+
+    // Initiale Prüfung + bei Resize
+    updateArrows();
+    window.addEventListener('resize', updateArrows);
+
+    // Auch nach DOM-Änderungen (Tabs werden dynamisch befüllt) neu prüfen
+    const observer = new MutationObserver(updateArrows);
+    observer.observe(tabs, { childList: true, subtree: false });
+})();
+// ─── FOOTER SCROLL ARROWS END ────────────────────────────────────────────────
 
 function subscribeState(id, callback) {
     if(!id) return;

@@ -254,17 +254,67 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 1rem;
+    padding: 0 0 0 0;
     box-sizing: border-box;
     z-index: 1000;
     backdrop-filter: blur(15px);
     box-shadow: 0 -5px 20px rgba(0,0,0,0.4);
+    overflow: hidden;
 }
 
 .footer-tabs {
     display: flex;
     align-items: center;
     height: 100%;
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.footer-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+/* Scroll-Pfeile im Footer */
+.footer-scroll-arrow {
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 100%;
+    background: var(--footer-bg);
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.footer-scroll-arrow.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.footer-scroll-arrow:hover {
+    color: var(--text-primary);
+}
+
+.footer-scroll-arrow--left {
+    box-shadow: 4px 0 8px var(--footer-bg);
+}
+
+.footer-scroll-arrow--right {
+    box-shadow: -4px 0 8px var(--footer-bg);
 }
 
 .footer-tab {
@@ -295,15 +345,31 @@ body {
 }
 
 .config-btn {
-    background: none;
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+    background: var(--footer-bg);
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
     text-decoration: none;
-    transition: transform 0.3s;
+    padding: 0 1rem;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    align-self: center;
+    box-sizing: border-box;
 }
 
-.config-btn:hover {
+.config-btn span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease-in-out;
+    line-height: 1;
+}
+
+.config-btn:hover span {
     transform: rotate(45deg);
 }
 

@@ -3,6 +3,45 @@
 let socket = null;
 const configId = '0_userdata.0.dashboard.config';
 let ioBrokerConfig = null;
+let loaderTimer = null;
+let lightboxTimer = null;
+const delayLoadingBar = 500;  // Wartezeit in Millisekunden, bis der Ladebalken erscheint
+const delayLightbox = 3000;   // Wartezeit in Millisekunden, bis der Verbindungsdialog (Lightbox) auftaucht
+
+function handleConnectionError(errorMessage) {
+    // Wenn schon Timer laufen, machen wir nichts weiter (verhindert Event-Spam)
+    if (loaderTimer || lightboxTimer) return; 
+    
+    loaderTimer = setTimeout(() => {
+        const loader = document.getElementById('connection-loader');
+        if (loader) {
+            loader.classList.remove('connection-loader-hidden');
+            loader.classList.add('connection-loader-visible');
+        }
+    }, delayLoadingBar);
+
+    lightboxTimer = setTimeout(() => {
+        const loader = document.getElementById('connection-loader');
+        if (loader) {
+            loader.classList.remove('connection-loader-visible');
+            loader.classList.add('connection-loader-hidden');
+        }
+        showConfigLightbox(errorMessage, true);
+    }, delayLightbox);
+}
+
+function clearConnectionTimers() {
+    clearTimeout(loaderTimer);
+    clearTimeout(lightboxTimer);
+    loaderTimer = null;
+    lightboxTimer = null;
+    
+    const loader = document.getElementById('connection-loader');
+    if (loader) {
+        loader.classList.remove('connection-loader-visible');
+        loader.classList.add('connection-loader-hidden');
+    }
+}
 
 // Hilfsfunktion: Sprache aus ioBroker synchronisieren (nur wenn nicht manuell gesetzt)
 function syncLanguageFromIoBroker(socketInstance, callback) {
@@ -285,6 +324,7 @@ function connectSocket(socketUrl) {
     socket = io(socketUrl);
 
     socket.on('connect', () => {
+        clearConnectionTimers(); // Neu: Timer löschen und Ladebalken ausblenden
         hideConfigLightbox();
         
         syncLanguageFromIoBroker(socket);
@@ -301,15 +341,13 @@ function connectSocket(socketUrl) {
 
     socket.on('connect_error', (err) => {
         console.error('Socket-Verbindung fehlgeschlagen:', err);
-        // Bei Verbindungsfehler Konfiguration erneut anzeigen mit Fehlermeldung + Retry-Button
-        showConfigLightbox(t('notReachable'), true);
+        handleConnectionError(t('notReachable')); // Angepasst
     });
 
     socket.on('disconnect', (reason) => {
         console.warn('Socket getrennt:', reason);
-        // Bei unerwarteter Trennung Lightbox anzeigen mit Retry-Button
         if (reason === 'io server disconnect' || reason === 'transport close') {
-            showConfigLightbox(t('connectionLost'), true);
+            handleConnectionError(t('connectionLost')); // Angepasst
         }
     });
 }

@@ -1147,3 +1147,19 @@ color: var(--error-color);
     animation: shimmer 1.5s infinite ease-in-out;
     pointer-events: none;
 }
+
+#connection-loader {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    transition: opacity 0.5s ease-in-out;
+}
+.connection-loader-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+.connection-loader-visible {
+    opacity: 1;
+}
